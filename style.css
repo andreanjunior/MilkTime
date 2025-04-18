@@ -1,0 +1,18 @@
+/* Customizações para Materialize */
+body {
+    background: #f5f5f5;
+}
+.container {
+    max-width: 600px;
+    margin-top: 30px;
+}
+.card-panel {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.06);
+}
+.collection-item {
+    font-size: 1.05em;
+}
+.totais {
+    font-size: 1.1em;
+}
