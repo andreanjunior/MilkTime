@@ -10,17 +10,39 @@ $db->exec('CREATE TABLE IF NOT EXISTS mamadas (
 )');
 setlocale(LC_TIME, 'pt_BR.UTF-8');
 date_default_timezone_set('America/Sao_Paulo');
-// Registrar mamada
+// Registrar, editar ou excluir mamada
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $tipo = $_POST['tipo'] ?? '';
-    $quantidade = intval($_POST['quantidade'] ?? 0);
-    $data_hora = $_POST['data_hora'] ?? date('Y-m-d\TH:i');
-    $data_hora = str_replace('T', ' ', $data_hora);
-    if ($tipo && $quantidade > 0) {
-        $stmt = $db->prepare('INSERT INTO mamadas (tipo, quantidade, data_hora) VALUES (?, ?, ?)');
-        $stmt->execute([$tipo, $quantidade, $data_hora]);
+    $acao = $_POST['acao'] ?? '';
+    if ($acao === 'excluir' && isset($_POST['id'])) {
+        $id = intval($_POST['id']);
+        $stmt = $db->prepare('DELETE FROM mamadas WHERE id = ?');
+        $stmt->execute([$id]);
         header('Location: index.php');
         exit;
+    } elseif ($acao === 'editar' && isset($_POST['id'])) {
+        $id = intval($_POST['id']);
+        $tipo = $_POST['tipo'] ?? '';
+        $quantidade = intval($_POST['quantidade'] ?? 0);
+        $data_hora = $_POST['data_hora'] ?? date('Y-m-d\TH:i');
+        $data_hora = str_replace('T', ' ', $data_hora);
+        if ($tipo && $quantidade > 0) {
+            $stmt = $db->prepare('UPDATE mamadas SET tipo = ?, quantidade = ?, data_hora = ? WHERE id = ?');
+            $stmt->execute([$tipo, $quantidade, $data_hora, $id]);
+            header('Location: index.php');
+            exit;
+        }
+    } else {
+        // Registrar novo
+        $tipo = $_POST['tipo'] ?? '';
+        $quantidade = intval($_POST['quantidade'] ?? 0);
+        $data_hora = $_POST['data_hora'] ?? date('Y-m-d\TH:i');
+        $data_hora = str_replace('T', ' ', $data_hora);
+        if ($tipo && $quantidade > 0) {
+            $stmt = $db->prepare('INSERT INTO mamadas (tipo, quantidade, data_hora) VALUES (?, ?, ?)');
+            $stmt->execute([$tipo, $quantidade, $data_hora]);
+            header('Location: index.php');
+            exit;
+        }
     }
 }
 // Últimas mamadas
@@ -90,19 +112,20 @@ function tempo_humano($segundos) {
     <style>
         body { background: #f5f5f5; }
         .container { max-width: 600px; margin-top: 12px; }
-.form-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
-.form-row .input-field { flex: 1 1 120px; margin: 0; min-width: 100px; }
-input[type=datetime-local] {
-  min-width: 80px;
-  max-width: 180px;
-  width: 100%;
-  box-sizing: border-box;
-}
-@media (max-width: 600px) {
+.form-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 0; }
+.input-field { flex: 1 1 130px; min-width: 120px; margin-bottom: 0; }
+@media (max-width: 700px) {
+  .container { padding: 0 2vw; }
+  .form-row { flex-direction: column; gap: 0; }
+  .input-field { min-width: 100%; margin-bottom: 12px; }
   input[type=datetime-local] {
     max-width: 100%;
-    font-size: 0.97em;
+    font-size: 1em;
   }
+}
+@media (max-width: 430px) {
+  .container { padding: 0 1vw; }
+  .input-field { font-size:0.97em; }
 }
 .btn-large { min-width: 120px; padding: 0 10px; }
 .chip-mui { display:inline-flex; align-items:center; font-size:1em; font-weight:500; margin-right:8px; margin-bottom:4px; padding:0 10px; border-radius:18px; height:32px; }
@@ -111,7 +134,7 @@ input[type=datetime-local] {
 .chip-mui.amber { background:#fff8e1; color:#ff8f00; }
 .chip-mui.grey { background:#ececec; color:#333; }
 .mamadas-list { margin-top: 12px; }
-.collection-item { padding: 8px 12px; font-size: 1em; }
+.collection-item { padding: 4px 8px 2px 8px; font-size: 0.98em; display: flex; align-items: center; justify-content: space-between; min-height: 38px; }
 .card-panel { margin: 10px 0 6px 0; padding: 12px 16px; border-radius: 14px; }
 h4 { margin-bottom: 10px; font-size: 1.5em; }
 small { font-size: .93em; }
@@ -134,40 +157,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <form method="POST" class="card-panel" autocomplete="off" style="margin-bottom:8px;">
-    <div class="form-row">
-
-    <?php if ($sucesso): ?>
-        <div class="card-panel green lighten-4 green-text text-darken-4" id="msg-sucesso" style="margin-bottom:6px;">
-            <i class="material-icons left">check_circle</i> Mamada registrada!
+    <div class="form-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <?php if ($sucesso): ?>
+            <div class="card-panel green lighten-4 green-text text-darken-4" id="msg-sucesso" style="margin-bottom:6px;width:100%;">
+                <i class="material-icons left">check_circle</i> Mamada registrada!
+            </div>
+        <?php elseif ($erro): ?>
+            <div class="card-panel red lighten-4 red-text text-darken-4" style="margin-bottom:6px;width:100%;">
+                <i class="material-icons left">error</i> Preencha todos os campos corretamente.
+            </div>
+        <?php endif; ?>
+        <div class="input-field" style="flex:1 1 140px;min-width:120px;width:100%;max-width:220px;">
+            <i class="material-icons prefix">local_drink</i>
+            <select name="tipo" required>
+                <option value="" disabled selected>Tipo</option>
+                <option value="materno">Leite Materno</option>
+                <option value="formula">Fórmula</option>
+            </select>
+            <label>Tipo</label>
         </div>
-    <?php elseif ($erro): ?>
-        <div class="card-panel red lighten-4 red-text text-darken-4" style="margin-bottom:6px;">
-            <i class="material-icons left">error</i> Preencha todos os campos corretamente.
+        <div class="input-field" style="flex:1 1 100px;min-width:100px;width:100%;max-width:160px;">
+            <i class="material-icons prefix">opacity</i>
+            <input type="number" name="quantidade" id="quantidade" min="1" required autofocus>
+            <label for="quantidade">Qtd (ml)</label>
         </div>
-    <?php endif; ?>
-    <div class="input-field" style="min-width:110px;">
-        <i class="material-icons prefix">local_drink</i>
-        <select name="tipo" required>
-            <option value="" disabled selected>Tipo</option>
-            <option value="materno">Leite Materno</option>
-            <option value="formula">Fórmula</option>
-        </select>
-        <label>Tipo</label>
-    </div>
-    <div class="input-field" style="min-width:100px;">
-        <i class="material-icons prefix">opacity</i>
-        <input type="number" name="quantidade" id="quantidade" min="1" required autofocus>
-        <label for="quantidade">Qtd (ml)</label>
-    </div>
-    <div class="input-field" style="min-width:120px;">
-    <i class="material-icons prefix">access_time</i>
-    <input type="datetime-local" name="data_hora" id="data_hora" value="<?php echo date('Y-m-d\TH:i'); ?>" placeholder="Data/Hora" style="margin-top:12px;">
-</div>
-    <button class="btn-large waves-effect waves-light blue" type="submit" style="min-width:120px;font-size:1em;height:44px;">
-        <i class="material-icons left">add_circle</i> Registrar
+        <div class="input-field" style="flex:2 1 180px;min-width:130px;width:100%;max-width:240px;">
+            <i class="material-icons prefix">access_time</i>
+            <input type="datetime-local" name="data_hora" id="data_hora" value="<?php echo isset($_POST['data_hora']) ? htmlspecialchars($_POST['data_hora']) : date('Y-m-d\TH:i'); ?>" placeholder="Data/Hora">
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;min-width:70px;max-width:90px;padding-left:10px;">
+    <button class="btn waves-effect waves-light blue" type="submit" style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:12px;box-shadow:0 2px 6px #0001;font-size:1.4em;padding:0;">
+        <i class="material-icons" style="margin:0;">add</i>
     </button>
+</div>
     </div>
 </form>
+<style>@media (max-width: 700px) {
+    .form-row { flex-direction: column; gap:0; }
+    .input-field, .form-row > div { max-width:100% !important; min-width:100% !important; width:100% !important; }
+}</style>
 <script>
 // Foco automático no campo quantidade
 setTimeout(function(){
@@ -190,20 +218,54 @@ setTimeout(function(){
             <ul class="collection">
                 <?php
                 $proxima = null;
+$editando = isset($_GET['edit']) ? intval($_GET['edit']) : null;
 foreach ($mamadas as $m) {
+    // Garante formato correto para datetime-local ao editar
+$dt = '';
+if (strpos($m['data_hora'], 'T') !== false) {
+    $dt = $m['data_hora'];
+} else {
     $dt = str_replace(' ', 'T', $m['data_hora']);
+}
+// Se faltar segundos, completa
+if (strlen($dt) === 16) { /* Y-m-dTH:i */ }
+else if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $dt)) { $dt = substr($dt,0,16); }
     $tipo = $m['tipo'] === 'materno' ? 'Leite Materno' : 'Fórmula';
-    echo '<li class="collection-item">';
-    echo '<span class="badge">' . $m['quantidade'] . ' ml</span>';
-    echo '<b>' . $tipo . '</b> <br><small>';
-    echo date('d/m/Y H:i', strtotime($m['data_hora']));
-    if ($proxima) {
-        $t = strtotime($m['data_hora']) - strtotime($proxima);
-        if ($t > 0) {
-            echo ' <span class="grey-text">(' . tempo_humano($t) . ' após)</span>';
+    echo '<li class="collection-item" style="position:relative;">';
+    // Formulário de edição inline
+    if ($editando === intval($m['id'])) {
+        echo '<form method="POST" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;" autocomplete="off">';
+        echo '<input type="hidden" name="id" value="' . $m['id'] . '"><input type="hidden" name="acao" value="editar">';
+        echo '<select name="tipo" style="min-width:90px;">';
+        echo '<option value="materno"'.($m['tipo']==='materno'?' selected':'').'>Leite Materno</option>';
+        echo '<option value="formula"'.($m['tipo']==='formula'?' selected':'').'>Fórmula</option>';
+        echo '</select>';
+        echo '<input type="number" name="quantidade" min="1" value="' . $m['quantidade'] . '" style="width:70px;">';
+        echo '<input type="datetime-local" name="data_hora" value="' . htmlspecialchars($dt) . '" style="width:170px;">';
+        echo '<button class="btn-flat" type="submit" title="Salvar"><i class="material-icons green-text">check</i></button>';
+        echo '<a href="index.php" class="btn-flat" title="Cancelar"><i class="material-icons red-text">close</i></a>';
+        echo '</form>';
+    } else {
+        echo '<span class="badge">' . $m['quantidade'] . ' ml</span>';
+        echo '<b>' . $tipo . '</b> <br><small>';
+        echo date('d/m/Y H:i', strtotime($m['data_hora']));
+        if ($proxima) {
+            $t = strtotime($m['data_hora']) - strtotime($proxima);
+            if ($t > 0) {
+                echo ' <span class="grey-text">(' . tempo_humano($t) . ' após)</span>';
+            }
         }
+        echo '</small>';
+        // Botões editar/excluir abaixo
+        echo '<div style="margin-top:8px;display:flex;justify-content:center;gap:12px;">';
+        echo '<a href="?edit=' . $m['id'] . '" class="btn-flat" title="Editar"><i class="material-icons">edit</i></a>';
+        echo '<form method="POST" style="display:inline" onsubmit="return confirm(\'Excluir este registro?\');">';
+        echo '<input type="hidden" name="id" value="' . $m['id'] . '"><input type="hidden" name="acao" value="excluir">';
+        echo '<button class="btn-flat" type="submit" title="Excluir"><i class="material-icons red-text">delete</i></button>';
+        echo '</form>';
+        echo '</div>';
     }
-    echo '</small></li>';
+    echo '</li>';
     $proxima = $m['data_hora'];
 }
                 ?>
