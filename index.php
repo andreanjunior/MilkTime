@@ -215,6 +215,15 @@ setTimeout(function(){
 </div>
         <div class="mamadas-list card-panel">
             <b>Últimas mamadas:</b>
+<?php
+// Comparação entre as duas últimas mamadas
+if (count($mamadas) >= 2) {
+    $ultima = strtotime($mamadas[0]['data_hora']);
+    $penultima = strtotime($mamadas[1]['data_hora']);
+    $diferenca = abs($ultima - $penultima);
+    echo '<div class="chip-mui grey" style="margin-bottom:8px;"><i class="material-icons left" style="font-size:18px;">compare_arrows</i> Intervalo entre as 2 últimas: <b>' . tempo_humano($diferenca) . '</b></div>';
+}
+?>
             <ul class="collection">
                 <?php
                 $proxima = null;
