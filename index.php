@@ -209,8 +209,8 @@ setTimeout(function(){
 }, 2200);
 </script>
         <div style="display:flex;flex-wrap:wrap;gap:8px 8px;margin-bottom:4px;justify-content:space-between;">
-    <span class="chip-mui blue"><i class="material-icons left" style="font-size:18px;">local_hospital</i> Materno: <b style="margin-left:2px;"><?php echo $totais['materno'] ?? 0; ?>ml</b></span>
-    <span class="chip-mui green"><i class="material-icons left" style="font-size:18px;">local_drink</i> Fórmula: <b style="margin-left:2px;"><?php echo $totais['formula'] ?? 0; ?>ml</b></span>
+    <span class="chip-mui blue"><i class="material-icons left" style="font-size:18px;">local_hospital</i> Materno: <b style="margin-left:2px;"><?php echo $totais24h['materno'] ?? 0; ?>ml</b></span>
+    <span class="chip-mui green"><i class="material-icons left" style="font-size:18px;">local_drink</i> Fórmula: <b style="margin-left:2px;"><?php echo $totais24h['formula'] ?? 0; ?>ml</b></span>
     <span class="chip-mui amber"><i class="material-icons left" style="font-size:18px;">timer</i> Média: <b style="margin-left:2px;"><?php echo $media_intervalo ? tempo_humano($media_intervalo) : 'N/A'; ?></b></span>
 </div>
         <div class="mamadas-list card-panel">
@@ -228,7 +228,9 @@ if (count($mamadas) >= 2) {
                 <?php
                 $proxima = null;
 $editando = isset($_GET['edit']) ? intval($_GET['edit']) : null;
+$count = 0;
 foreach ($mamadas as $m) {
+    $count++;
     // Garante formato correto para datetime-local ao editar
 $dt = '';
 if (strpos($m['data_hora'], 'T') !== false) {
@@ -240,7 +242,8 @@ if (strpos($m['data_hora'], 'T') !== false) {
 if (strlen($dt) === 16) { /* Y-m-dTH:i */ }
 else if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $dt)) { $dt = substr($dt,0,16); }
     $tipo = $m['tipo'] === 'materno' ? 'Leite Materno' : 'Fórmula';
-    echo '<li class="collection-item" style="position:relative;">';
+    $extraClass = $count > 5 ? ' hidden-mamada' : '';
+    echo '<li class="collection-item' . $extraClass . '" style="position:relative;">';
     // Formulário de edição inline
     if ($editando === intval($m['id'])) {
         echo '<form method="POST" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;" autocomplete="off">';
@@ -279,8 +282,14 @@ else if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $dt)) { $dt = sub
 }
                 ?>
             </ul>
+            <?php if (count($mamadas) > 5): ?>
+            <button id="mostrar-mais-mamadas" class="btn-flat blue-text" style="margin-top:6px;">Mais</button>
+            <?php endif; ?>
         </div>
     </div>
+    <style>
+    .hidden-mamada { display: none; }
+    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -290,6 +299,16 @@ else if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $dt)) { $dt = sub
             var elems = document.querySelectorAll('input[type=datetime-local]');
             M.updateTextFields();
         }, 100);
+        var btn = document.getElementById('mostrar-mais-mamadas');
+        if (btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.hidden-mamada').forEach(function(el) {
+                    el.style.display = 'list-item'; // Garante que <li> apareça corretamente
+                });
+                btn.style.display = 'none';
+            });
+        }
     });
     </script>
 </body>
