@@ -12,6 +12,50 @@ if ($method === 'GET' && $action === 'listar') {
     echo json_encode($mamadas);
     exit;
 }
+if ($method === 'GET' && $action === 'status') {
+    // Diagnóstico de saúde do bebê baseado nas mamadas a partir de 00:01 do dia atual
+    $hoje = date('Y-m-d');
+    $inicio = $hoje . ' 00:01:00';
+    $agora = date('Y-m-d H:i:s');
+    $stmt = $db->prepare('SELECT * FROM mamadas WHERE data_hora >= ? AND data_hora <= ? ORDER BY data_hora ASC');
+    $stmt->execute([$inicio, $agora]);
+    $mamadas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $total = count($mamadas);
+    $intervalos = [];
+    for ($i = 1; $i < $total; $i++) {
+        $t1 = strtotime($mamadas[$i-1]['data_hora']);
+        $t2 = strtotime($mamadas[$i]['data_hora']);
+        $intervalos[] = abs($t2 - $t1) / 3600; // horas
+    }
+    $intervalo_medio = $intervalos ? round(array_sum($intervalos) / count($intervalos), 2) : null;
+    // Critérios básicos
+    $alertas = [];
+    // Previsão inteligente: avalia se o ritmo é suficiente para chegar a 8 mamadas até 00:00
+    $inicio = strtotime($inicio);
+    $agora_ts = strtotime($agora);
+    $horas_passadas = max(1, ($agora_ts - $inicio) / 3600); // evita divisão por zero
+    $horas_totais = 24 - (1/60); // de 00:01 até 00:00 (aprox. 23.98h)
+    $ritmo_atual = $total / $horas_passadas; // mamadas por hora
+    $previsao_final = round($ritmo_atual * $horas_totais);
+    if ($previsao_final < 8) {
+        $alertas[] = 'Poucas mamadas previstas para hoje (mantendo o ritmo atual, não chegará a 8).';
+    }
+    if ($intervalo_medio !== null && $intervalo_medio > 4) {
+        $alertas[] = 'Intervalo médio entre mamadas muito longo (> 4h).';
+    }
+    $status = 'Tudo certo!';
+    if (!empty($alertas)) {
+        $status = 'Atenção!';
+    }
+    echo json_encode([
+        'total_mamadas_dia' => $total,
+        'intervalo_medio_horas' => $intervalo_medio,
+        'alertas' => $alertas,
+        'status' => $status,
+    ]);
+    exit;
+}
+
 if ($method === 'GET' && $action === 'totais') {
     // Totais do dia
     $hoje = date('Y-m-d');
