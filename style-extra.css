@@ -1,0 +1,921 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap');
+
+/* MilkTime - Complementos de estilo para design moderno */
+:root {
+  /* Variáveis principais foram definidas em style.css */
+}
+
+/* Cards de resumo */
+.resumo-card {
+  background: white;
+  border-radius: 18px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.resumo-card .card-icon {
+  font-size: 18px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  opacity: 0.7;
+}
+
+.resumo-card .card-title {
+  font-family: var(--font-primary);
+  margin-bottom: 12px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.resumo-card .card-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.resumo-card .card-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* Animações de valores */
+.animated-value {
+  transition: all 0.8s ease-out;
+}
+
+/* Histórico de mamadas */
+.collection {
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 24px;
+}
+
+.collection .collection-header {
+  background-color: var(--primary);
+  color: white;
+  padding: 16px;
+  font-family: var(--font-primary);
+  font-weight: 700;
+  border-bottom: none;
+}
+
+.collection-item {
+  padding: 16px !important;
+  background-color: white !important;
+  border-bottom: 1px solid var(--neutral-medium) !important;
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.collection-item:last-child {
+  border-bottom: none !important;
+}
+
+.collection-item .info-principal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.collection-item .info-principal .tipo-icon {
+  font-size: 24px;
+}
+
+.collection-item .info-principal .quantidade {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.collection-item .info-secundaria {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* Status do bebê */
+#painel-status-bebe {
+  margin: 32px auto 20px;
+  padding: 24px;
+  border-radius: 24px;
+  box-shadow: var(--card-shadow);
+  background: white;
+  color: var(--text-primary);
+  border: none;
+  transition: var(--transition-default);
+  position: relative;
+  overflow: hidden;
+}
+
+#painel-status-bebe::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: var(--accent);
+  transition: var(--transition-default);
+}
+
+#painel-status-bebe.tudocerto {
+  background: white;
+}
+
+#painel-status-bebe.tudocerto::before {
+  background: var(--accent);
+}
+
+#painel-status-bebe.atencao {
+  background: white;
+}
+
+#painel-status-bebe.atencao::before {
+  background: #FF9800;
+}
+
+#painel-status-bebe.erro {
+  background: white;
+}
+
+#painel-status-bebe.erro::before {
+  background: #F44336;
+}
+
+#painel-status-bebe .status-icone {
+  font-size: 1.8rem;
+  vertical-align: middle;
+  margin-right: 12px;
+  transition: var(--transition-default);
+}
+
+#painel-status-bebe .status-titulo {
+  font-family: var(--font-primary);
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+#painel-status-bebe .status-info {
+  display: block;
+  margin: 12px 0;
+  font-size: 1rem;
+}
+
+#painel-status-bebe ul {
+  margin: 16px 0 0 20px;
+  padding: 0;
+  list-style: disc;
+  font-size: 0.95rem;
+}
+
+/* Toggle de tema */
+.theme-toggle {
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background-color: white;
+  box-shadow: var(--card-shadow);
+}
+
+/* Formulário de nova mamada */
+.tipo-btn {
+  padding: 14px 20px;
+  border-radius: 12px;
+  background-color: white;
+  border: 2px solid var(--neutral-medium);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-default);
+  /* Melhorar o contraste dos botões inativos */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tipo-btn span {
+  /* Garantir que o texto seja visível */
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.tipo-btn .material-icons {
+  /* Destacar ícones */
+  opacity: 1;
+  color: var(--text-primary);
+}
+
+.tipo-btn:hover {
+  border-color: var(--primary);
+  background-color: var(--primary);
+  color: white;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.tipo-btn:hover span,
+.tipo-btn:hover .material-icons {
+  color: white;
+}
+
+.tipo-btn.active {
+  border-color: var(--primary);
+  background-color: var(--primary);
+  color: white;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.tipo-btn.active span,
+.tipo-btn.active .material-icons {
+  color: white;
+}
+
+.tipo-btn.formula.active {
+  border-color: var(--secondary);
+  background-color: var(--secondary);
+}
+
+/* Adicionar contraste aos campos de formulário */
+.input-field input {
+  border: 1px solid var(--neutral-medium) !important;
+  border-radius: 12px !important;
+  padding: 0 16px !important;
+  box-shadow: none !important;
+  background-color: white !important;
+  color: var(--text-primary) !important;
+}
+
+.input-field .prefix {
+  color: var(--primary) !important;
+}
+
+.input-field label {
+  color: var(--text-secondary) !important;
+}
+
+/* Gráfico de visualização */
+.chart-container {
+  background: white;
+  border-radius: 18px;
+  padding: 20px;
+  margin: 24px 0;
+  box-shadow: var(--card-shadow);
+}
+
+.chart-title {
+  font-family: var(--font-primary);
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.chart-filters {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.chart-filter-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background-color: var(--neutral-medium);
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition-default);
+}
+
+.chart-filter-btn.active {
+  background-color: var(--primary);
+  color: white;
+}
+
+/* Adaptações para modo escuro */
+.dark-mode #painel-status-bebe, 
+.dark-mode .card-panel, 
+.dark-mode .collection-item,
+.dark-mode .resumo-card,
+.dark-mode .chart-container {
+  background-color: var(--neutral-medium);
+  color: var(--text-primary);
+}
+
+/* Adaptações para dispositivos móveis */
+@media (max-width: 600px) {
+  .tipo-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  #painel-status-bebe {
+    border-radius: 18px;
+    padding: 20px;
+  }
+  
+  .collection-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .collection-item .info-secundaria {
+    margin-top: 8px;
+  }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+/* Professional theme overrides */
+:root {
+  --bg-primary: #f5f7fa;
+  --bg-secondary: #ffffff;
+  --accent: #1976d2;
+  --accent-dark: #115293;
+  --neutral-light: #e0e0e0;
+  --neutral-medium: #9e9e9e;
+  --text-default: #212121;
+  --text-muted: #757575;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-default);
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 700px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+.card-panel {
+  background: var(--bg-secondary) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  padding: 24px !important;
+}
+
+button, .btn {
+  background-color: var(--accent) !important;
+  color: #fff !important;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s;
+}
+button:hover, .btn:hover {
+  background-color: var(--accent-dark) !important;
+}
+
+/* Logo and header */
+.container .center-align {
+  margin: 32px 0;
+}
+.container .center-align img {
+  height: 64px;
+}
+
+/* Form layout */
+.form-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Status panel */
+#painel-status-bebe {
+  margin: 32px auto 0;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: var(--bg-secondary);
+  color: var(--text-default);
+  border: 1px solid var(--neutral-light);
+  display: none;
+}
+#painel-status-bebe.tudocerto {
+  background: linear-gradient(120deg, #e0f7fa 60%, #e0f7fa 100%);
+  color: #00695c;
+  border-color: #b2dfdb;
+}
+#painel-status-bebe.atencao {
+  background: linear-gradient(120deg, #fff3e0 60%, #ffe0b2 100%);
+  color: #ef6c00;
+  border-color: #ffcc80;
+}
+#painel-status-bebe.erro {
+  background: linear-gradient(120deg, #ffebee 60%, #ffcdd2 100%);
+  color: #c62828;
+  border-color: #ffcdd2;
+}
+#painel-status-bebe .status-icone {
+  font-size: 1.5rem;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+#painel-status-bebe .status-titulo {
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+#painel-status-bebe .status-info {
+  display: block;
+  margin: 8px 0;
+  font-size: 0.95rem;
+}
+#painel-status-bebe ul {
+  margin: 16px 0 0 20px;
+  padding: 0;
+  list-style: disc;
+  font-size: 0.95rem;
+}
+
+/* Animações e efeitos adicionais para MilkTime */
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--neutral-medium);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e45c7e;
+}
+
+/* Glassmorphism para cards em destaque */
+.glass-card {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dark-mode .glass-card {
+  background: rgba(30, 30, 30, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Ripple effect para botões */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple:after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform .5s, opacity 1s;
+}
+
+.ripple:active:after {
+  transform: scale(0, 0);
+  opacity: .3;
+  transition: 0s;
+}
+
+/* Efeitos de hover para cards */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .hover-lift:hover {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Badge notification animation */
+@keyframes pulse-badge {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(251, 111, 146, 0.7);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(251, 111, 146, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(251, 111, 146, 0);
+  }
+}
+
+.notification-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background-color: var(--accent);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  animation: pulse-badge 2s infinite;
+}
+
+/* Skeleton loading effect */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+body.dark-mode .skeleton {
+  background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Progress indicators */
+.progress-bar {
+  height: 6px;
+  background-color: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+body.dark-mode .progress-bar {
+  background-color: #333;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--accent);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+/* Status colors */
+.status-success {
+  color: #4CAF50;
+}
+
+.status-warning {
+  color: #FFC107;
+}
+
+.status-danger {
+  color: #F44336;
+}
+
+/* Toast notifications */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1001;
+}
+
+.toast {
+  padding: 16px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  background-color: white;
+  color: var(--text-primary);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transform: translateY(100%);
+  opacity: 0;
+  animation: toast-in 0.3s forwards;
+}
+
+body.dark-mode .toast {
+  background-color: #333;
+  color: white;
+}
+
+.toast.hide {
+  animation: toast-out 0.3s forwards;
+}
+
+@keyframes toast-in {
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-out {
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.toast .icon {
+  margin-right: 12px;
+}
+
+.toast .message {
+  flex: 1;
+}
+
+.toast .close {
+  cursor: pointer;
+  margin-left: 12px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.toast .close:hover {
+  opacity: 1;
+}
+
+/* Empty state styling */
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-state i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.empty-state h4 {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.empty-state p {
+  margin-bottom: 24px;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Highlight animation */
+@keyframes highlight {
+  0% {
+    background-color: rgba(251, 111, 146, 0.2);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.highlight {
+  animation: highlight 2s ease-out;
+}
+
+/* Improved floating action button */
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.fab i {
+  font-size: 24px;
+}
+
+/* Timeline styling */
+.timeline {
+  position: relative;
+  margin: 20px 0;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8px;
+  height: 100%;
+  width: 2px;
+  background-color: var(--accent);
+  opacity: 0.3;
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -22px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--accent);
+}
+
+.timeline-content {
+  padding: 12px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .timeline-content {
+  background-color: #333;
+}
+
+/* Calendar day indicator */
+.day-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  color: white;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+/* Stats counter animation */
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.counter {
+  font-size: 24px;
+  font-weight: 700;
+  animation: count-up 1s ease-out forwards;
+}
+
+/* Dot indicator for active/inactive */
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.dot.active {
+  background-color: #4CAF50;
+}
+
+.dot.inactive {
+  background-color: #F44336;
+}
+
+/* Radio button styles */
+.radio-button-group {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.radio-button {
+  position: relative;
+  padding: 10px 20px;
+  border-radius: 20px;
+  border: 2px solid #ddd;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  flex: 1;
+}
+
+body.dark-mode .radio-button {
+  border-color: #444;
+}
+
+.radio-button.active {
+  border-color: var(--accent);
+  background-color: rgba(251, 111, 146, 0.1);
+}
+
+.radio-button input {
+  position: absolute;
+  opacity: 0;
+}
+
+/* Improve accessibility */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white;
+    font-size: 12pt;
+  }
+  
+  .container {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .card-panel, .resumo-card, .collection-item {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ddd;
+  }
+}
+
+/* Better mobile support for input fields */
+@media (max-width: 600px) {
+  input, select, textarea {
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+  }
+  
+  .container {
+    margin-top: 10px;
+  }
+  
+  .card-panel {
+    padding: 16px;
+  }
+  
+  /* Adjust spacing for mobile */
+  h5 {
+    font-size: 1.3rem;
+  }
+  
+  .collection-item {
+    padding: 12px;
+  }
+}

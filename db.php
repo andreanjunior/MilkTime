@@ -10,6 +10,9 @@ function getDb() {
         quantidade INTEGER NOT NULL,
         data_hora DATETIME NOT NULL
     )');
+    // Limpeza automática de registros antigos (>48 horas)
+    $threshold = date('Y-m-d H:i:s', strtotime('-48 hours'));
+    $db->prepare('DELETE FROM mamadas WHERE data_hora < ?')->execute([$threshold]);
     return $db;
 }
 ?>

@@ -1,99 +1,218 @@
 <?php
 require_once 'db.php';
-header('Content-Type: application/json; charset=utf-8');
-$db = getDb();
-$method = $_SERVER['REQUEST_METHOD'];
-$action = $_GET['action'] ?? '';
+header('Content-Type: application/json');
 
-if ($method === 'GET' && $action === 'listar') {
-    // Lista últimas mamadas
-    $stmt = $db->query('SELECT * FROM mamadas ORDER BY data_hora DESC LIMIT 20');
-    $mamadas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    echo json_encode($mamadas);
-    exit;
-}
-if ($method === 'GET' && $action === 'status') {
-    // Diagnóstico de saúde do bebê baseado nas mamadas a partir de 00:01 do dia atual
-    $hoje = date('Y-m-d');
-    $inicio = $hoje . ' 00:01:00';
-    $agora = date('Y-m-d H:i:s');
-    $stmt = $db->prepare('SELECT * FROM mamadas WHERE data_hora >= ? AND data_hora <= ? ORDER BY data_hora ASC');
-    $stmt->execute([$inicio, $agora]);
-    $mamadas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $total = count($mamadas);
-    $intervalos = [];
-    for ($i = 1; $i < $total; $i++) {
-        $t1 = strtotime($mamadas[$i-1]['data_hora']);
-        $t2 = strtotime($mamadas[$i]['data_hora']);
-        $intervalos[] = abs($t2 - $t1) / 3600; // horas
+try {
+    $db = getDb();
+    
+    // Verifica a ação solicitada
+    $action = $_GET['action'] ?? '';
+    
+    switch ($action) {
+        case 'status':
+            // Obtém o status atual do bebê com base nas mamadas recentes
+            $status = getStatusBebe($db);
+            echo json_encode($status);
+            break;
+            
+        case 'stats':
+            // Endpoint para estatísticas gerais
+            $stats = getStatsGerais($db);
+            echo json_encode($stats);
+            break;
+            
+        default:
+            http_response_code(400);
+            echo json_encode(['error' => 'Ação não reconhecida']);
     }
-    $intervalo_medio = $intervalos ? round(array_sum($intervalos) / count($intervalos), 2) : null;
-    // Critérios básicos
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['error' => $e->getMessage()]);
+}
+
+/**
+ * Obtém o status atual do bebê com base nas mamadas recentes
+ * @param PDO $db Conexão com o banco de dados
+ * @return array Status do bebê e alertas
+ */
+function getStatusBebe($db) {
+    // Última mamada
+    $stmt = $db->query('SELECT * FROM mamadas ORDER BY data_hora DESC LIMIT 1');
+    $ultima = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Cálculo de intervalo entre mamadas (últimas 24h)
+    $stmt = $db->query("
+        SELECT 
+            data_hora 
+        FROM 
+            mamadas 
+        WHERE 
+            data_hora >= datetime('now', '-24 hours') 
+        ORDER BY 
+            data_hora DESC
+    ");
+    $mamadas24h = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Total de mamadas hoje
+    $hoje = date('Y-m-d');
+    $stmt = $db->prepare("
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN tipo = 'peito' THEN quantidade ELSE 0 END) as total_peito,
+            SUM(CASE WHEN tipo = 'formula' THEN quantidade ELSE 0 END) as total_formula,
+            SUM(quantidade) as total_ml
+        FROM 
+            mamadas 
+        WHERE 
+            date(data_hora) = :hoje
+    ");
+    $stmt->bindParam(':hoje', $hoje);
+    $stmt->execute();
+    $totais_hoje = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Cálculo de intervalo médio
+    $intervalo_medio = calcularIntervaloMedio($mamadas24h);
+    
+    // Verifica se precisa de alimentação
     $alertas = [];
-    // Previsão inteligente: avalia se o ritmo é suficiente para chegar a 8 mamadas até 00:00
-    $inicio = strtotime($inicio);
-    $agora_ts = strtotime($agora);
-    $horas_passadas = max(1, ($agora_ts - $inicio) / 3600); // evita divisão por zero
-    $horas_totais = 24 - (1/60); // de 00:01 até 00:00 (aprox. 23.98h)
-    $ritmo_atual = $total / $horas_passadas; // mamadas por hora
-    $previsao_final = round($ritmo_atual * $horas_totais);
-    if ($previsao_final < 8) {
-        $alertas[] = 'Poucas mamadas previstas para hoje (mantendo o ritmo atual, não chegará a 8).';
+    $status = "Tudo em ordem";
+    
+    if (!$ultima) {
+        $status = "Sem registros";
+    } else {
+        // Ajustando para o timezone correto
+        date_default_timezone_set('America/Sao_Paulo');
+        
+        $ultima_timestamp = strtotime($ultima['data_hora']);
+        $agora = time();
+        $horas_desde_ultima = ($agora - $ultima_timestamp) / 3600;
+        
+        // Verifica se está muito tempo sem mamar
+        if ($horas_desde_ultima > 4) {
+            $alertas[] = "Já se passaram " . number_format($horas_desde_ultima, 1) . " horas desde a última alimentação";
+            $status = "Atenção";
+        }
+        
+        // Verifica se teve poucas mamadas hoje
+        if ($totais_hoje['total'] < 6 && date('H') > 14) {
+            $alertas[] = "Apenas " . $totais_hoje['total'] . " alimentações hoje, pode precisar de mais";
+            $status = "Atenção";
+        }
+        
+        // Verifica volume total abaixo do esperado
+        if ($totais_hoje['total_ml'] < 500 && date('H') > 16) {
+            $alertas[] = "Volume total hoje: " . $totais_hoje['total_ml'] . "ml (abaixo do recomendado)";
+            $status = "Atenção";
+        }
     }
-    if ($intervalo_medio !== null && $intervalo_medio > 4) {
-        $alertas[] = 'Intervalo médio entre mamadas muito longo (> 4h).';
-    }
-    $status = 'Tudo certo!';
-    if (!empty($alertas)) {
-        $status = 'Atenção!';
-    }
-    echo json_encode([
-        'total_mamadas_dia' => $total,
-        'intervalo_medio_horas' => $intervalo_medio,
-        'alertas' => $alertas,
+    
+    return [
         'status' => $status,
-    ]);
-    exit;
+        'alertas' => $alertas,
+        'total_mamadas_dia' => $totais_hoje['total'] ?? 0,
+        'total_ml_dia' => $totais_hoje['total_ml'] ?? 0,
+        'peito_ml' => $totais_hoje['total_peito'] ?? 0,
+        'formula_ml' => $totais_hoje['total_formula'] ?? 0,
+        'intervalo_medio_horas' => $intervalo_medio,
+        'ultima_mamada' => $ultima ? [
+            'tipo' => $ultima['tipo'],
+            'quantidade' => $ultima['quantidade'],
+            'tempo_passado' => $ultima ? tempo_humano(time() - strtotime($ultima['data_hora'])) : 'N/A'
+        ] : null,
+    ];
 }
 
-if ($method === 'GET' && $action === 'totais') {
-    // Totais do dia
-    $hoje = date('Y-m-d');
-    $stmt = $db->prepare('SELECT tipo, SUM(quantidade) as total FROM mamadas WHERE date(data_hora) = ? GROUP BY tipo');
-    $stmt->execute([$hoje]);
-    $totais = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-    echo json_encode($totais);
-    exit;
+/**
+ * Obtém estatísticas gerais sobre alimentação
+ * @param PDO $db Conexão com o banco de dados
+ * @return array Estatísticas gerais
+ */
+function getStatsGerais($db) {
+    // Total de mamadas nos últimos 7 dias
+    $stmt = $db->query("
+        SELECT 
+            COUNT(*) as total_mamadas,
+            SUM(quantidade) as volume_total,
+            AVG(quantidade) as media_volume,
+            SUM(CASE WHEN tipo = 'peito' THEN 1 ELSE 0 END) as qtd_peito,
+            SUM(CASE WHEN tipo = 'formula' THEN 1 ELSE 0 END) as qtd_formula,
+            SUM(CASE WHEN tipo = 'peito' THEN quantidade ELSE 0 END) as volume_peito,
+            SUM(CASE WHEN tipo = 'formula' THEN quantidade ELSE 0 END) as volume_formula
+        FROM 
+            mamadas 
+        WHERE 
+            data_hora >= datetime('now', '-7 days')
+    ");
+    
+    $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Média de mamadas por dia
+    $stats['media_mamadas_dia'] = round($stats['total_mamadas'] / 7, 1);
+    
+    // Porcentagem de cada tipo
+    $stats['porcentagem_peito'] = $stats['total_mamadas'] > 0 
+        ? round(($stats['qtd_peito'] / $stats['total_mamadas']) * 100) 
+        : 0;
+        
+    $stats['porcentagem_formula'] = $stats['total_mamadas'] > 0 
+        ? round(($stats['qtd_formula'] / $stats['total_mamadas']) * 100) 
+        : 0;
+    
+    return $stats;
 }
-if ($method === 'GET' && $action === 'media') {
-    // Média de tempo entre mamadas
-    $stmt = $db->query('SELECT data_hora FROM mamadas ORDER BY data_hora DESC LIMIT 10');
-    $datas = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+/**
+ * Calcula o intervalo médio entre as mamadas
+ * @param array $mamadas Lista de mamadas ordenadas por data
+ * @return float|null Intervalo médio em horas ou null se insuficiente
+ */
+function calcularIntervaloMedio($mamadas) {
+    if (count($mamadas) < 2) {
+        return null;
+    }
+    
     $intervalos = [];
-    for ($i = 1; $i < count($datas); $i++) {
-        $d1 = strtotime($datas[$i-1]);
-        $d2 = strtotime($datas[$i]);
-        $intervalos[] = abs($d1 - $d2);
+    $anterior = null;
+    
+    foreach ($mamadas as $mamada) {
+        $atual = strtotime($mamada['data_hora']);
+        if ($anterior !== null) {
+            $intervalo = abs($anterior - $atual) / 3600; // Converte para horas
+            if ($intervalo < 12) { // Ignora intervalos muito longos
+                $intervalos[] = $intervalo;
+            }
+        }
+        $anterior = $atual;
     }
-    $media = count($intervalos) ? array_sum($intervalos)/count($intervalos) : 0;
-    echo json_encode(['media_segundos' => $media]);
-    exit;
-}
-if ($method === 'POST' && $action === 'registrar') {
-    // Registrar mamada
-    $data = json_decode(file_get_contents('php://input'), true);
-    $tipo = $data['tipo'] ?? '';
-    $quantidade = intval($data['quantidade'] ?? 0);
-    $data_hora = $data['data_hora'] ?? date('Y-m-d H:i');
-    if ($tipo && $quantidade > 0) {
-        $stmt = $db->prepare('INSERT INTO mamadas (tipo, quantidade, data_hora) VALUES (?, ?, ?)');
-        $stmt->execute([$tipo, $quantidade, $data_hora]);
-        echo json_encode(['ok' => true]);
-        exit;
+    
+    if (empty($intervalos)) {
+        return null;
     }
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'erro' => 'Dados inválidos']);
-    exit;
+    
+    return array_sum($intervalos) / count($intervalos);
 }
-http_response_code(404);
-echo json_encode(['erro' => 'Ação não encontrada']);
+
+/**
+ * Formata o tempo para exibição amigável
+ * @param int $segundos Tempo em segundos
+ * @return string Tempo formatado
+ */
+function tempo_humano($segundos) {
+    if ($segundos < 60) {
+        return "agora";
+    }
+    
+    if ($segundos < 3600) {
+        $minutos = floor($segundos / 60);
+        return $minutos . "min";
+    }
+    
+    $horas = floor($segundos / 3600);
+    $minutos = floor(($segundos % 3600) / 60);
+    
+    if ($minutos > 0) {
+        return $horas . "h" . $minutos . "min";
+    }
+    
+    return $horas . "h";
+}

@@ -1,0 +1,43 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Círculo de fundo -->
+    <circle cx="256" cy="256" r="240" fill="#F8F9FA"/>
+    
+    <!-- Borda decorativa -->
+    <circle cx="256" cy="256" r="236" stroke="#8ECAE6" stroke-width="8"/>
+    
+    <!-- Ícone do frasco -->
+    <path d="M180 120H332C339.732 120 346 126.268 346 134V144C346 151.732 339.732 158 332 158H316V232C316 265.137 289.137 292 256 292C222.863 292 196 265.137 196 232V158H180C172.268 158 166 151.732 166 144V134C166 126.268 172.268 120 180 120Z" fill="#FFB5A7"/>
+    
+    <!-- Detalhes da garrafa -->
+    <path d="M196 190V232C196 265.137 222.863 292 256 292C289.137 292 316 265.137 316 232V190H196Z" fill="#8ECAE6"/>
+    
+    <!-- Medições -->
+    <rect x="210" y="200" width="92" height="4" rx="2" fill="white"/>
+    <rect x="210" y="220" width="92" height="4" rx="2" fill="white"/>
+    <rect x="210" y="240" width="92" height="4" rx="2" fill="white"/>
+    <rect x="210" y="260" width="92" height="4" rx="2" fill="white"/>
+    
+    <!-- Gotas -->
+    <circle cx="230" cy="350" r="15" fill="#8ECAE6" opacity="0.8">
+        <animate attributeName="opacity" values="0.8;0.4;0.8" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="280" cy="380" r="12" fill="#FFB5A7" opacity="0.8">
+        <animate attributeName="opacity" values="0.8;0.4;0.8" dur="2.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="330" cy="340" r="10" fill="#8ECAE6" opacity="0.8">
+        <animate attributeName="opacity" values="0.8;0.4;0.8" dur="1.8s" repeatCount="indefinite"/>
+    </circle>
+    
+    <!-- Texto "MilkTime" -->
+    <path d="M132 392L142 352H151L161 392H153L151 384H142L140 392H132ZM143 378H150L147 364H146L143 378Z" fill="#212529"/>
+    <path d="M164 392V352H172V386H184V392H164Z" fill="#212529"/>
+    <path d="M188 392V352H196V392H188Z" fill="#212529"/>
+    <path d="M200 392V352H208V380H219V352H227V392H219V386H208V392H200Z" fill="#212529"/>
+    <path d="M246 392L237 370V392H229V352H237V372L246 352H254L243 374L256 392H246Z" fill="#212529"/>
+    <path d="M258 392V352H280V358H266V369H278V375H266V386H280V392H258Z" fill="#212529"/>
+    <path d="M303 392V352H311V386H323V392H303Z" fill="#212529"/>
+    <path d="M326 392V352H345C349.418 352 353 355.582 353 360V384C353 388.418 349.418 392 345 392H326ZM334 358V386H345C345.552 386 346 385.552 346 385V359C346 358.448 345.552 358 345 358H334Z" fill="#212529"/>
+    <path d="M357 392V352H380V358H365V367H377V373H365V392H357Z" fill="#212529"/>
+    <path d="M382 392V352H390V372L401 352H409V392H401V369L390 392H382Z" fill="#212529"/>
+    <path d="M412 392V352H420V386H432V392H412Z" fill="#212529"/>
+</svg>

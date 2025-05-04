@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = intval($_POST['id']);
         $tipo = $_POST['tipo'] ?? '';
         $quantidade = intval($_POST['quantidade'] ?? 0);
-        $data_hora = $_POST['data_hora'] ?? date('Y-m-d\TH:i');
+        $data_hora = $_POST['data_hora'] ?? date('Y-m-d\TH:i:s');
         $data_hora = str_replace('T', ' ', $data_hora);
         if ($tipo && $quantidade > 0) {
             $stmt = $db->prepare('UPDATE mamadas SET tipo = ?, quantidade = ?, data_hora = ? WHERE id = ?');
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Registrar novo
         $tipo = $_POST['tipo'] ?? '';
         $quantidade = intval($_POST['quantidade'] ?? 0);
-        $data_hora = $_POST['data_hora'] ?? date('Y-m-d\TH:i');
+        $data_hora = $_POST['data_hora'] ?? date('Y-m-d\TH:i:s');
         $data_hora = str_replace('T', ' ', $data_hora);
         if ($tipo && $quantidade > 0) {
             $stmt = $db->prepare('INSERT INTO mamadas (tipo, quantidade, data_hora) VALUES (?, ?, ?)');
@@ -45,8 +45,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-// Últimas mamadas (apenas 5)
-$stmt = $db->query('SELECT * FROM mamadas ORDER BY data_hora DESC LIMIT 5');
+// Últimas mamadas (apenas 8) do dia atual
+$hoje = date('Y-m-d');
+$inicio_dia = $hoje . ' 00:01:00';
+$stmt = $db->prepare('SELECT * FROM mamadas WHERE data_hora >= ? ORDER BY data_hora DESC LIMIT 8');
+$stmt->execute([$inicio_dia]);
 $mamadas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // Totais do dia (a partir de 00:01)
 $hoje = date('Y-m-d');
@@ -103,261 +106,272 @@ function tempo_humano($segundos) {
     $min = $min % 60;
     return $h . 'h ' . $min . 'min';
 }
-?><!DOCTYPE html>
+// Data de nascimento da Alice (ajuste aqui se necessário)
+$dt_nascimento = '2025-03-25';
+$hoje_data = new DateTime(date('Y-m-d'));
+$nasc_data = new DateTime($dt_nascimento);
+$diff = $nasc_data->diff($hoje_data);
+$idade_str = $diff->m > 0 ? ( ($diff->m == 1 ? '1 mês' : $diff->m . ' meses') . ' e ' . $diff->d . ' dias' ) : ($diff->d . ' dias');
+$idade_str = $diff->m > 0 ? $idade_str : ($diff->d == 1 ? '1 dia' : $diff->d . ' dias');
+?>
+<!DOCTYPE html>
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Mamadas</title>
+    <title>MilkTime</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
-    <style>
-        body { background: #f5f5f5; }
-        .container { max-width: 600px; margin-top: 12px; }
-        .form-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 0; }
-        .input-field { flex: 1 1 130px; min-width: 120px; margin-bottom: 0; }
-        @media (max-width: 700px) {
-          .container { padding: 0 2vw; }
-          .form-row { flex-direction: column; gap: 0; }
-          .input-field { min-width: 100%; margin-bottom: 12px; }
-          input[type=datetime-local] {
-            max-width: 100%;
-            font-size: 1em;
-          }
-        }
-        @media (max-width: 430px) {
-          .container { padding: 0 1vw; }
-          .input-field { font-size:0.97em; }
-        }
-        .btn-large { min-width: 120px; padding: 0 10px; }
-        .chip-mui { display:inline-flex; align-items:center; font-size:1em; font-weight:500; margin-right:8px; margin-bottom:4px; padding:0 10px; border-radius:18px; height:32px; }
-    </style>
-    <style>
-        #painel-status-bebe { margin: 28px auto 32px auto; padding: 28px 24px 22px 24px; border-radius: 28px; box-shadow: 0 8px 32px 0 rgba(0,0,0,0.12); font-size: 1.18em; background: linear-gradient(120deg, #fff 60%, #f6f7fa 100%); color: #222; display: none; max-width: 430px; position: relative; animation: painelFadeIn 0.7s cubic-bezier(.4,0,.2,1); transition: background 0.3s, color 0.3s, box-shadow 0.3s; border: 1.5px solid #e5e5ea; box-sizing: border-box; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
-        #painel-status-bebe .status-icone { font-size: 2.3em; vertical-align: middle; margin-right: 12px; margin-bottom: 7px; display: inline-block; filter: drop-shadow(0 1px 2px #0001); }
-        #painel-status-bebe.atencao { background: linear-gradient(120deg, #fffbe6 60%, #fff8e1 100%); color: #b26a00; border-color: #ffe082; }
-        #painel-status-bebe.tudocerto { background: linear-gradient(120deg, #f0fff4 60%, #e0f7fa 100%); color: #1b5e20; border-color: #b2dfdb; }
-        #painel-status-bebe.erro { background: linear-gradient(120deg, #fff0f0 60%, #ffeaea 100%); color: #c62828; border-color: #ffcdd2; }
-        #painel-status-bebe ul { margin: 14px 0 0 0; padding-left: 22px; font-size: 0.97em; }
-        #painel-status-bebe {
-            margin: 28px auto 32px auto;
-            padding: 28px 24px 22px 24px;
-            border-radius: 28px;
-            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.12);
-            font-size: 1.18em;
-            background: linear-gradient(120deg, #fff 60%, #f6f7fa 100%);
-            color: #222;
-            display: none;
-            max-width: 430px;
-            position: relative;
-            animation: painelFadeIn 0.7s cubic-bezier(.4,0,.2,1);
-            transition: background 0.3s, color 0.3s, box-shadow 0.3s;
-            border: 1.5px solid #e5e5ea;
-            box-sizing: border-box;
-            -webkit-backdrop-filter: blur(8px);
-            backdrop-filter: blur(8px);
-        }
-        #painel-status-bebe .status-icone {
-            font-size: 2.3em;
-            vertical-align: middle;
-            margin-right: 12px;
-            margin-bottom: 7px;
-            display: inline-block;
-            filter: drop-shadow(0 1px 2px #0001);
-        }
-        #painel-status-bebe.atencao {
-            background: linear-gradient(120deg, #fffbe6 60%, #fff8e1 100%);
-            color: #b26a00;
-            border-color: #ffe082;
-        }
-        #painel-status-bebe.tudocerto {
-            background: linear-gradient(120deg, #f0fff4 60%, #e0f7fa 100%);
-            color: #1b5e20;
-            border-color: #b2dfdb;
-        }
-        #painel-status-bebe.erro {
-            background: linear-gradient(120deg, #fff0f0 60%, #ffeaea 100%);
-            color: #c62828;
-            border-color: #ffcdd2;
-        }
-        #painel-status-bebe ul {
-            margin: 14px 0 0 0;
-            padding-left: 22px;
-            font-size: 0.97em;
-        }
-        #painel-status-bebe .status-titulo {
-            font-weight: 600;
-            font-size: 1.13em;
-            display: inline-block;
-            margin-bottom: 4px;
-            letter-spacing: 0.01em;
-        }
-        #painel-status-bebe .status-info {
-            font-size: 1.02em;
-            color: #666;
-            margin-top: 4px;
-            margin-bottom: 2px;
-            display: block;
-        }
-        @keyframes painelFadeIn {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @media (max-width: 600px) {
-            #painel-status-bebe { padding: 18px 7vw 16px 7vw; border-radius: 22px; }
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-extra.css">
 </head>
 <body>
-    
-    <div class="container">
-    <h3 class="center-align" style="font-size:2em;margin-top:18px;margin-bottom:24px;letter-spacing:0.01em;">Contador de Amamentação</h3>
-    <div class="row" id="painel-superior" style="display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap;justify-content:flex-start;margin-bottom:12px;"></div>
-    <h4 class="left-align" style="margin-bottom:0.5em;font-size:1.35em;line-height:1.2;">Registro de mamadas 🍼:</h4>
-    <?php
-// Feedback visual após registro
-$sucesso = false;
-$erro = false;
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if ($tipo && $quantidade > 0) {
-        $sucesso = true;
-    } else {
-        $erro = true;
-    }
-}
-?>
-<form method="POST" class="card-panel" autocomplete="off" style="margin-bottom:8px;">
-    <div class="form-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-        <?php if ($sucesso): ?>
-            <div class="card-panel green lighten-4 green-text text-darken-4" id="msg-sucesso" style="margin-bottom:6px;width:100%;">
-                <i class="material-icons left">check_circle</i> Mamada registrada!
-            </div>
-        <?php elseif ($erro): ?>
-            <div class="card-panel red lighten-4 red-text text-darken-4" style="margin-bottom:6px;width:100%;">
-                <i class="material-icons left">error</i> Preencha todos os campos corretamente.
-            </div>
-        <?php endif; ?>
-        <div class="input-field" style="flex:1 1 140px;min-width:120px;width:100%;max-width:220px;">
-            <i class="material-icons prefix">local_drink</i>
-            <select name="tipo" required>
-                <option value="" disabled selected>Tipo</option>
-                <option value="materno">Leite Materno</option>
-                <option value="formula">Fórmula</option>
-            </select>
-            <label>Tipo</label>
-        </div>
-        <div class="input-field" style="flex:1 1 100px;min-width:100px;width:100%;max-width:160px;">
-            <i class="material-icons prefix">opacity</i>
-            <input type="number" name="quantidade" id="quantidade" min="1" required autofocus>
-            <label for="quantidade">Qtd (ml)</label>
-        </div>
-        <div class="input-field" style="flex:2 1 180px;min-width:130px;width:100%;max-width:240px;">
-            <i class="material-icons prefix">access_time</i>
-            <input type="datetime-local" name="data_hora" id="data_hora" value="<?php echo isset($_POST['data_hora']) ? htmlspecialchars($_POST['data_hora']) : date('Y-m-d\TH:i'); ?>" placeholder="Data/Hora">
-        </div>
-        <div style="display:flex;align-items:center;justify-content:center;min-width:70px;max-width:90px;padding-left:10px;">
-    <button class="btn waves-effect waves-light blue" type="submit" style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:12px;box-shadow:0 2px 6px #0001;font-size:1.4em;padding:0;">
-        <i class="material-icons" style="margin:0;">add</i>
-    </button>
-</div>
+    <!-- Toggle de modo escuro -->
+    <div class="theme-toggle" id="theme-toggle">
+        <i class="material-icons">light_mode</i>
     </div>
-</form>
-<style>@media (max-width: 700px) {
-    .form-row { flex-direction: column; gap:0; }
-    .input-field, .form-row > div { max-width:100% !important; min-width:100% !important; width:100% !important; }
-}</style>
-<script>
-// Foco automático no campo quantidade
-setTimeout(function(){
-    var q = document.getElementById('quantidade');
-    if(q) q.focus();
-}, 300);
-// Fade out na mensagem de sucesso
-setTimeout(function(){
-    var msg = document.getElementById('msg-sucesso');
-    if(msg) msg.style.display = 'none';
-}, 2200);
-</script>
-        <div style="display:flex;flex-wrap:wrap;gap:8px 8px;margin-bottom:4px;justify-content:space-between;">
-    <span class="chip-mui blue"><i class="material-icons left" style="font-size:18px;">add</i> Materno: <b style="margin-left:2px;"><?php echo $totais['materno'] ?? 0; ?>ml</b></span>
-    <span class="chip-mui green"><i class="material-icons left" style="font-size:18px;">local_drink</i> Fórmula: <b style="margin-left:2px;"><?php echo $totais['formula'] ?? 0; ?>ml</b></span>
-    <span class="chip-mui amber"><i class="material-icons left" style="font-size:18px;">timer</i> Média: <b style="margin-left:2px;"><?php echo $media_intervalo ? tempo_humano($media_intervalo) : 'N/A'; ?></b></span>
-</div>
-        <div class="mamadas-list card-panel">
-            <b>Últimas mamadas:</b>
-<?php
-// Comparação entre as duas últimas mamadas
-if (count($mamadas) >= 2) {
-    $ultima = strtotime($mamadas[0]['data_hora']);
-    $penultima = strtotime($mamadas[1]['data_hora']);
-    $diferenca = abs($ultima - $penultima);
-    echo '<div class="chip-mui grey" style="margin-bottom:8px;"><i class="material-icons left" style="font-size:18px;">compare_arrows</i> Intervalo entre as 2 últimas: <b>' . tempo_humano($diferenca) . '</b></div>';
-}
-?>
-            <ul class="collection">
-                <?php
-                $proxima = null;
-$editando = isset($_GET['edit']) ? intval($_GET['edit']) : null;
-$count = 0;
-foreach ($mamadas as $m) {
-    $count++;
-    // Garante formato correto para datetime-local ao editar
-$dt = '';
-if (strpos($m['data_hora'], 'T') !== false) {
-    $dt = $m['data_hora'];
-} else {
-    $dt = str_replace(' ', 'T', $m['data_hora']);
-}
-// Se faltar segundos, completa
-if (strlen($dt) === 16) { /* Y-m-dTH:i */ }
-else if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $dt)) { $dt = substr($dt,0,16); }
-    $tipo = $m['tipo'] === 'materno' ? 'Leite Materno' : 'Fórmula';
-    $extraClass = $count > 5 ? ' hidden-mamada' : '';
-    echo '<li class="collection-item' . $extraClass . '" style="position:relative;">';
-    // Formulário de edição inline
-    if ($editando === intval($m['id'])) {
-        echo '<form method="POST" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;" autocomplete="off">';
-        echo '<input type="hidden" name="id" value="' . $m['id'] . '"><input type="hidden" name="acao" value="editar">';
-        echo '<select name="tipo" style="min-width:90px;">';
-        echo '<option value="materno"'.($m['tipo']==='materno'?' selected':'').'>Leite Materno</option>';
-        echo '<option value="formula"'.($m['tipo']==='formula'?' selected':'').'>Fórmula</option>';
-        echo '</select>';
-        echo '<input type="number" name="quantidade" min="1" value="' . $m['quantidade'] . '" style="width:70px;">';
-        echo '<input type="datetime-local" name="data_hora" value="' . htmlspecialchars($dt) . '" style="width:170px;">';
-        echo '<button class="btn-flat" type="submit" title="Salvar"><i class="material-icons green-text">check</i></button>';
-        echo '<a href="index.php" class="btn-flat" title="Cancelar"><i class="material-icons red-text">close</i></a>';
-        echo '</form>';
-    } else {
-        echo '<span class="badge">' . $m['quantidade'] . ' ml</span>';
-        echo '<b>' . $tipo . '</b> <br><small>';
-        echo date('d/m/Y H:i', strtotime($m['data_hora']));
-        if ($proxima) {
-            $t = strtotime($m['data_hora']) - strtotime($proxima);
-            if ($t > 0) {
-                echo ' <span class="grey-text">(' . tempo_humano($t) . ' após)</span>';
-            }
-        }
-        echo '</small>';
-        // Botões editar/excluir abaixo
-        echo '<div style="margin-top:8px;display:flex;justify-content:center;gap:12px;">';
-        echo '<a href="?edit=' . $m['id'] . '" class="btn-flat" title="Editar"><i class="material-icons">edit</i></a>';
-        echo '<form method="POST" style="display:inline" onsubmit="return confirm(\'Excluir este registro?\');">';
-        echo '<input type="hidden" name="id" value="' . $m['id'] . '"><input type="hidden" name="acao" value="excluir">';
-        echo '<button class="btn-flat" type="submit" title="Excluir"><i class="material-icons red-text">delete</i></button>';
-        echo '</form>';
-        echo '</div>';
-    }
-    echo '</li>';
-    $proxima = $m['data_hora'];
-}
-                ?>
+
+    <div class="container">
+        <div class="center-align" style="margin-top:24px;margin-bottom:18px;">
+            <img src="logo.svg" alt="MilkTime Logo" style="height:72px;">
+            <h5 style="margin-top:12px;font-family:var(--font-primary);font-weight:700;">
+                <span style="color:var(--primary);">Milk</span><span style="color:var(--secondary);">Time</span>
+            </h5>
+            <p style="margin-top:4px;color:var(--text-secondary);">
+                Alice - <?php echo $idade_str; ?>
+            </p>
+        </div>
+
+        <?php if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($sucesso) && $sucesso): ?>
+        <div class="card-panel green lighten-4 green-text text-darken-3" id="msg-sucesso" style="border-radius:18px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;">
+                <i class="material-icons" style="margin-right:8px;">check_circle</i>
+                <span>Mamada registrada com sucesso!</span>
+            </div>
+        </div>
+        <?php elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($erro) && $erro): ?>
+        <div class="card-panel red lighten-4 red-text text-darken-3" id="msg-erro" style="border-radius:18px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;">
+                <i class="material-icons" style="margin-right:8px;">error</i>
+                <span>Erro: Verifique os dados inseridos.</span>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Card de registro de mamada -->
+        <div class="card-panel">
+            <h5 class="card-title" style="font-family:var(--font-primary);font-weight:700;margin-bottom:20px;color:var(--text-primary);">Nova Mamada</h5>
+            
+            <form method="POST" autocomplete="off">
+                <div class="form-row">
+                    <div style="display:flex;gap:12px;width:100%;margin-bottom:20px;">
+                        <div class="tipo-btn peito" id="btn-peito" onclick="selecionarTipo('peito')">
+                            <i class="material-icons">child_care</i>
+                            <span>Peito</span>
+                            <input type="radio" name="tipo" value="peito" style="display:none;" id="radio-peito">
+                        </div>
+                        
+                        <div class="tipo-btn formula" id="btn-formula" onclick="selecionarTipo('formula')">
+                            <i class="material-icons">opacity</i>
+                            <span>Fórmula</span>
+                            <input type="radio" name="tipo" value="formula" style="display:none;" id="radio-formula">
+                        </div>
+                    </div>
+                    
+                    <div class="input-field" style="width:100%;margin-bottom:16px;">
+                        <i class="material-icons prefix">local_drink</i>
+                        <input type="number" name="quantidade" id="quantidade" min="1" required autofocus>
+                        <label for="quantidade">Quantidade (ml)</label>
+                    </div>
+
+                    <div class="input-field" style="width:100%;margin-bottom:16px;">
+                        <i class="material-icons prefix">event</i>
+                        <input type="datetime-local" name="data_hora" id="data_hora" value="<?php echo date('Y-m-d\TH:i'); ?>" required>
+                        <label for="data_hora" class="active">Data e Hora</label>
+                    </div>
+
+                    <button type="submit" class="btn subtle-hover" style="width:100%;margin-top:10px;">
+                        <i class="material-icons left">add_circle</i>Registrar Mamada
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Cards de resumo -->
+        <div class="resumo-grid">
+            <div class="resumo-card">
+                <i class="material-icons card-icon">pie_chart</i>
+                <div class="card-title">Total Hoje</div>
+                <div class="animated-value card-value">
+                    <?php 
+                        echo isset($totais['peito']) ? $totais['peito'] : '0'; 
+                        echo ' + ';
+                        echo isset($totais['formula']) ? $totais['formula'] : '0';
+                        echo ' ml';
+                    ?>
+                </div>
+                <div class="card-subtitle">
+                    <i class="material-icons" style="font-size:16px;vertical-align:text-bottom;color:var(--primary);">child_care</i> 
+                    <?php echo isset($totais['peito']) ? $totais['peito'] . ' ml' : '0 ml'; ?>
+                </div>
+                <div class="card-subtitle">
+                    <i class="material-icons" style="font-size:16px;vertical-align:text-bottom;color:var(--secondary);">opacity</i>
+                    <?php echo isset($totais['formula']) ? $totais['formula'] . ' ml' : '0 ml'; ?>
+                </div>
+            </div>
+
+            <div class="resumo-card">
+                <i class="material-icons card-icon">schedule</i>
+                <div class="card-title">Média Intervalo</div>
+                <div class="animated-value card-value">
+                    <?php echo tempo_humano($media_24h); ?>
+                </div>
+                <div class="card-subtitle">
+                    Hoje: <?php echo tempo_humano($media_dia); ?>
+                </div>
+            </div>
+
+            <div class="resumo-card">
+                <i class="material-icons card-icon">update</i>
+                <div class="card-title">Última Mamada</div>
+                <div class="animated-value card-value">
+                    <?php 
+                        if (count($mamadas) > 0) {
+                            $ultima = strtotime($mamadas[0]['data_hora']);
+                            $agora = time();
+                            $diff = $agora - $ultima;
+                            echo tempo_humano($diff) . ' atrás';
+                        } else {
+                            echo "Nenhuma";
+                        }
+                    ?>
+                </div>
+                <div class="card-subtitle">
+                    <?php 
+                        if (count($mamadas) > 0) {
+                            echo $mamadas[0]['tipo'] === 'peito' ? 
+                                '<i class="material-icons" style="font-size:16px;vertical-align:text-bottom;color:var(--primary);">child_care</i>' : 
+                                '<i class="material-icons" style="font-size:16px;vertical-align:text-bottom;color:var(--secondary);">opacity</i>';
+                            echo ' ' . $mamadas[0]['quantidade'] . ' ml';
+                            
+                            // Mostrar o intervalo exato de forma mais detalhada
+                            $ultima = strtotime($mamadas[0]['data_hora']);
+                            $agora = time();
+                            $diff = $agora - $ultima;
+                            
+                            $horas = floor($diff / 3600);
+                            $minutos = floor(($diff % 3600) / 60);
+                            echo '<div style="margin-top:6px;">Tempo desde: <b>' . $horas . 'h ' . $minutos . 'min</b></div>';
+                            
+                            // Mostrar o intervalo entre a última e a penúltima mamada
+                            if (count($mamadas) > 1) {
+                                $ultima = strtotime($mamadas[0]['data_hora']);
+                                $penultima = strtotime($mamadas[1]['data_hora']);
+                                $diff_entre_mamadas = $ultima - $penultima;
+                                
+                                $horas_entre = floor($diff_entre_mamadas / 3600);
+                                $minutos_entre = floor(($diff_entre_mamadas % 3600) / 60);
+                                echo '<div style="margin-top:4px;">Intervalo anterior: <b>' . $horas_entre . 'h ' . $minutos_entre . 'min</b></div>';
+                            }
+                        }
+                    ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Histórico de mamadas -->
+        <div class="card-panel">
+            <h5 class="card-title" style="font-family:var(--font-primary);font-weight:700;margin-bottom:16px;color:var(--text-primary);">Histórico Recente</h5>
+
+            <ul class="collection" style="border:none;">
+                <?php foreach ($mamadas as $index => $m): ?>
+                    <li class="collection-item <?php echo $index >= 5 ? 'hidden-mamada' : ''; ?>" style="<?php echo $index >= 5 ? 'display:none;' : ''; ?>">
+                        <div class="info-principal">
+                            <div class="tipo-icon">
+                                <?php if ($m['tipo'] === 'peito'): ?>
+                                    <i class="material-icons" style="color:var(--primary);">child_care</i>
+                                <?php else: ?>
+                                    <i class="material-icons" style="color:var(--secondary);">opacity</i>
+                                <?php endif; ?>
+                            </div>
+                            <div>
+                                <span class="quantidade"><?php echo $m['quantidade']; ?> ml</span>
+                                <div class="info-secundaria">
+                                    <?php 
+                                        $data = new DateTime($m['data_hora']);
+                                        echo $data->format('d/m H:i'); 
+                                    ?>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <a href="#modal-edit-<?php echo $m['id']; ?>" class="modal-trigger btn-flat" style="padding:6px;"><i class="material-icons" style="color:var(--text-secondary);">edit</i></a>
+                            <form method="POST" style="display:inline;">
+                                <input type="hidden" name="acao" value="excluir">
+                                <input type="hidden" name="id" value="<?php echo $m['id']; ?>">
+                                <button type="submit" class="btn-flat" style="padding:6px;" onclick="return confirm('Tem certeza que deseja excluir?')">
+                                    <i class="material-icons" style="color:var(--text-secondary);">delete</i>
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+
+                    <!-- Modal de edição -->
+                    <div id="modal-edit-<?php echo $m['id']; ?>" class="modal" style="border-radius:24px;overflow:hidden;">
+                        <div class="modal-content">
+                            <h5 style="font-family:var(--font-primary);font-weight:700;">Editar Mamada</h5>
+                            <form method="POST" autocomplete="off">
+                                <input type="hidden" name="acao" value="editar">
+                                <input type="hidden" name="id" value="<?php echo $m['id']; ?>">
+                                
+                                <div style="display:flex;gap:12px;width:100%;margin:20px 0;">
+                                    <div class="tipo-btn peito <?php echo $m['tipo'] === 'peito' ? 'active' : ''; ?>" onclick="selecionarTipoModal(this, 'peito-<?php echo $m['id']; ?>')">
+                                        <i class="material-icons">child_care</i>
+                                        <span>Peito</span>
+                                        <input type="radio" name="tipo" value="peito" <?php echo $m['tipo'] === 'peito' ? 'checked' : ''; ?> id="peito-<?php echo $m['id']; ?>" style="display:none;">
+                                    </div>
+                                    
+                                    <div class="tipo-btn formula <?php echo $m['tipo'] === 'formula' ? 'active' : ''; ?>" onclick="selecionarTipoModal(this, 'formula-<?php echo $m['id']; ?>')">
+                                        <i class="material-icons">opacity</i>
+                                        <span>Fórmula</span>
+                                        <input type="radio" name="tipo" value="formula" <?php echo $m['tipo'] === 'formula' ? 'checked' : ''; ?> id="formula-<?php echo $m['id']; ?>" style="display:none;">
+                                    </div>
+                                </div>
+
+                                <div class="input-field">
+                                    <i class="material-icons prefix">local_drink</i>
+                                    <input type="number" name="quantidade" value="<?php echo $m['quantidade']; ?>" min="1" required>
+                                    <label for="quantidade" class="active">Quantidade (ml)</label>
+                                </div>
+
+                                <div class="input-field">
+                                    <i class="material-icons prefix">event</i>
+                                    <?php
+                                        $dt = new DateTime($m['data_hora']);
+                                        $formattedDate = $dt->format('Y-m-d\TH:i');
+                                    ?>
+                                    <input type="datetime-local" name="data_hora" value="<?php echo $formattedDate; ?>" required>
+                                    <label class="active">Data e Hora</label>
+                                </div>
+                            
+                                <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:16px 0 0 0;">
+                                    <a href="#!" class="modal-close btn-flat">Cancelar</a>
+                                    <button type="submit" class="btn">Salvar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
             </ul>
+            
             <?php if (count($mamadas) > 5): ?>
-            <button id="mostrar-mais-mamadas" class="btn-flat blue-text" style="margin-top:6px;">Mais</button>
+            <button id="mostrar-mais-mamadas" class="btn-flat blue-text" style="margin-top:16px;display:block;width:100%;text-align:center;">
+                Ver mais registros
+            </button>
             <?php endif; ?>
         </div>
-    </div>
-    <div style="max-width:430px;margin:32px auto 0 auto;">
+
+        <!-- Status do bebê -->
         <div id="painel-status-bebe">
             <span class="status-icone" id="status-icone">🔄</span>
             <span class="status-titulo">Status do bebê</span><br>
@@ -365,72 +379,174 @@ else if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $dt)) { $dt = sub
             <div id="status-detalhes"></div>
         </div>
     </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>
-function atualizarPainelStatusBebe() {
-    fetch('api.php?action=status')
-        .then(resp => resp.json())
-        .then(data => {
-            const painel = document.getElementById('painel-status-bebe');
-            const statusTxt = document.getElementById('status-txt');
-            const detalhes = document.getElementById('status-detalhes');
-            const icone = document.getElementById('status-icone');
-            if (!data || typeof data !== 'object') {
-                painel.className = 'erro';
-                statusTxt.textContent = 'Erro ao obter status.';
-                detalhes.innerHTML = '';
-                icone.textContent = '❌';
-                painel.style.display = 'block';
-                return;
-            }
-            // Estilo iOS: ícones SF Symbols-like
-            if (data.alertas && data.alertas.length > 0) {
-                painel.className = 'atencao';
-                icone.textContent = '⚠️'; // Pode ser substituído por SVG se desejar
-            } else {
-                painel.className = 'tudocerto';
-                icone.textContent = '✔️'; // iOS usa checkmark simples
-            }
-            statusTxt.textContent = data.status;
-            let html = `<span style='display:inline-block;margin-bottom:2px;'><b>Total de mamadas hoje:</b> <span style='font-weight:600;'>${data.total_mamadas_dia}</span></span><br>`;
-            if (data.intervalo_medio_horas !== null) {
-                html += `<span style='display:inline-block;margin-bottom:2px;'><b>Intervalo médio:</b> <span style='font-weight:600;'>${data.intervalo_medio_horas} h</span></span><br>`;
-            }
-            if (data.alertas && data.alertas.length > 0) {
-                html += '<ul>' + data.alertas.map(a => `<li>${a}</li>`).join('') + '</ul>';
-            }
-            detalhes.innerHTML = html;
-            painel.style.display = 'block';
-        })
-        .catch(() => {
-            const painel = document.getElementById('painel-status-bebe');
-            painel.className = 'erro';
-            document.getElementById('status-txt').textContent = 'Erro ao obter status.';
-            document.getElementById('status-detalhes').innerHTML = '';
-            document.getElementById('status-icone').textContent = '❌';
-            painel.style.display = 'block';
-        });
-}
-document.addEventListener('DOMContentLoaded', function() {
-    atualizarPainelStatusBebe();
-
-        var elems = document.querySelectorAll('select');
-        M.FormSelect.init(elems);
-        setTimeout(function(){
-            var elems = document.querySelectorAll('input[type=datetime-local]');
-            M.updateTextFields();
-        }, 100);
-        var btn = document.getElementById('mostrar-mais-mamadas');
-        if (btn) {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.querySelectorAll('.hidden-mamada').forEach(function(el) {
-                    el.style.display = 'list-item'; // Garante que <li> apareça corretamente
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            // Materialize init
+            M.AutoInit();
+            var elems = document.querySelectorAll('.modal');
+            M.Modal.init(elems, {});
+            
+            // Atualizar status
+            atualizarPainelStatusBebe();
+            
+            // Ver mais registros
+            var btn = document.getElementById('mostrar-mais-mamadas');
+            if (btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelectorAll('.hidden-mamada').forEach(function(el) {
+                        el.style.display = 'flex';
+                    });
+                    btn.style.display = 'none';
                 });
-                btn.style.display = 'none';
+            }
+            
+            // Mensagem de sucesso - esconder após 3 segundos
+            var msgSucesso = document.getElementById('msg-sucesso');
+            if (msgSucesso) {
+                setTimeout(function() {
+                    msgSucesso.style.opacity = '0';
+                    setTimeout(function() {
+                        msgSucesso.style.display = 'none';
+                    }, 300);
+                }, 3000);
+            }
+            
+            // Toggle de tema
+            initThemeToggle();
+            
+            // Inicializar com o primeiro tipo selecionado
+            setTimeout(function() {
+                const primeiroTipo = document.querySelector('.tipo-btn');
+                if (primeiroTipo) {
+                    primeiroTipo.click();
+                }
+            }, 100);
+            
+            // Animar valores na carga inicial
+            animateValues();
+        });
+        
+        // Funções de tipo de mamada
+        function selecionarTipo(tipo) {
+            document.getElementById('btn-peito').classList.remove('active');
+            document.getElementById('btn-formula').classList.remove('active');
+            document.getElementById('btn-' + tipo).classList.add('active');
+            document.getElementById('radio-' + tipo).checked = true;
+        }
+        
+        function selecionarTipoModal(el, id) {
+            el.parentNode.querySelectorAll('.tipo-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            el.classList.add('active');
+            document.getElementById(id).checked = true;
+        }
+        
+        // Theme toggle
+        function initThemeToggle() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+            
+            // Check for saved theme preference or default to prefersDarkScheme
+            const currentTheme = localStorage.getItem('theme') || 
+                                (prefersDarkScheme.matches ? 'dark' : 'light');
+            
+            if (currentTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeToggle.querySelector('i').textContent = 'dark_mode';
+            }
+            
+            // Toggle theme on click
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
+                
+                const icon = themeToggle.querySelector('i');
+                const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+                
+                icon.textContent = theme === 'dark' ? 'dark_mode' : 'light_mode';
+                localStorage.setItem('theme', theme);
             });
         }
-    });
+        
+        // Status do bebê
+        function atualizarPainelStatusBebe() {
+            fetch('api.php?action=status')
+                .then(resp => resp.json())
+                .then(data => {
+                    const painel = document.getElementById('painel-status-bebe');
+                    const statusTxt = document.getElementById('status-txt');
+                    const detalhes = document.getElementById('status-detalhes');
+                    const icone = document.getElementById('status-icone');
+                    
+                    if (!data || typeof data !== 'object') {
+                        painel.className = 'erro';
+                        statusTxt.textContent = 'Erro ao obter status.';
+                        detalhes.innerHTML = '';
+                        icone.textContent = '❌';
+                        painel.style.display = 'block';
+                        return;
+                    }
+                    
+                    if (data.alertas && data.alertas.length > 0) {
+                        painel.className = 'atencao';
+                        icone.textContent = '⚠️';
+                    } else {
+                        painel.className = 'tudocerto';
+                        icone.textContent = '✅';
+                    }
+                    
+                    statusTxt.textContent = data.status;
+                    
+                    let html = `<span style='display:inline-block;margin-bottom:6px;'><b>Total hoje:</b> <span style='font-weight:600;'>${data.total_mamadas_dia}</span></span><br>`;
+                    
+                    if (data.intervalo_medio_horas !== null) {
+                        const med = data.intervalo_medio_horas;
+                        const hrs = Math.floor(med);
+                        const mins = Math.round((med - hrs) * 60);
+                        const medStr = hrs > 0 ? `${hrs}h ${mins}min` : `${mins}min`;
+                        html += `<span style='display:inline-block;margin-bottom:6px;'><b>Intervalo médio:</b> <span style='font-weight:600;'>${medStr}</span></span><br>`;
+                    }
+                    
+                    if (data.alertas && data.alertas.length > 0) {
+                        html += '<ul>' + data.alertas.map(a => `<li>${a}</li>`).join('') + '</ul>';
+                    }
+                    
+                    detalhes.innerHTML = html;
+                    painel.style.display = 'block';
+                    
+                    // Animar valores
+                    animateValues();
+                })
+                .catch(() => {
+                    const painel = document.getElementById('painel-status-bebe');
+                    painel.className = 'erro';
+                    document.getElementById('status-txt').textContent = 'Erro ao obter status.';
+                    document.getElementById('status-detalhes').innerHTML = '';
+                    document.getElementById('status-icone').textContent = '❌';
+                    painel.style.display = 'block';
+                });
+        }
+
+        // Animação de valores
+        function animateValues() {
+            document.querySelectorAll('.animated-value').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(10px)';
+                
+                setTimeout(() => {
+                    el.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, 300);
+            });
+        }
+        
+        // Animar valores na carga inicial
+        animateValues();
     </script>
 </body>
 </html>
