@@ -2,6 +2,9 @@
 require_once 'db.php';
 header('Content-Type: application/json');
 
+// Ajuste de timezone para Brasília
+date_default_timezone_set('America/Sao_Paulo');
+
 try {
     $db = getDb();
     
@@ -55,6 +58,8 @@ function getStatusBebe($db) {
     
     // Total de mamadas hoje
     $hoje = date('Y-m-d');
+    $inicio_dia = $hoje . ' 00:00:00';
+    $fim_dia = $hoje . ' 23:59:59';
     $stmt = $db->prepare("
         SELECT 
             COUNT(*) as total,
@@ -64,9 +69,10 @@ function getStatusBebe($db) {
         FROM 
             mamadas 
         WHERE 
-            date(data_hora) = :hoje
+            data_hora >= :inicio_dia AND data_hora <= :fim_dia
     ");
-    $stmt->bindParam(':hoje', $hoje);
+    $stmt->bindParam(':inicio_dia', $inicio_dia);
+    $stmt->bindParam(':fim_dia', $fim_dia);
     $stmt->execute();
     $totais_hoje = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -81,8 +87,6 @@ function getStatusBebe($db) {
         $status = "Sem registros";
     } else {
         // Ajustando para o timezone correto
-        date_default_timezone_set('America/Sao_Paulo');
-        
         $ultima_timestamp = strtotime($ultima['data_hora']);
         $agora = time();
         $horas_desde_ultima = ($agora - $ultima_timestamp) / 3600;
