@@ -45,15 +45,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-// Últimas mamadas (apenas 8) do dia atual
+// Últimas mamadas (últimos 5 registros antes de 00:00 + registros do dia atual)
 $hoje = date('Y-m-d');
-$inicio_dia = $hoje . ' 00:01:00';
-$stmt = $db->prepare('SELECT * FROM mamadas WHERE data_hora >= ? ORDER BY data_hora DESC LIMIT 8');
-$stmt->execute([$inicio_dia]);
-$mamadas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-// Totais do dia (a partir de 00:01)
+$inicio_dia_atual = $hoje . ' 00:00:00';
+$ontem = date('Y-m-d', strtotime('-1 day'));
+$inicio_dia_ontem = $ontem . ' 00:00:00';
+
+// Primeiro, obtemos os últimos 5 registros do dia anterior à meia-noite
+$stmt_anterior = $db->prepare('
+    SELECT * FROM mamadas 
+    WHERE data_hora >= ? AND data_hora < ? 
+    ORDER BY data_hora DESC 
+    LIMIT 5
+');
+$stmt_anterior->execute([$inicio_dia_ontem, $inicio_dia_atual]);
+$mamadas_anteriores = $stmt_anterior->fetchAll(PDO::FETCH_ASSOC);
+
+// Agora, obtemos todos os registros do dia atual
+$stmt_atual = $db->prepare('
+    SELECT * FROM mamadas 
+    WHERE data_hora >= ? 
+    ORDER BY data_hora DESC
+');
+$stmt_atual->execute([$inicio_dia_atual]);
+$mamadas_atuais = $stmt_atual->fetchAll(PDO::FETCH_ASSOC);
+
+// Combinamos os dois conjuntos em ordem cronológica inversa (mais recente primeiro)
+$mamadas = array_merge($mamadas_atuais, $mamadas_anteriores);
+
+// Ordenamos novamente para garantir que estejam na ordem correta
+usort($mamadas, function($a, $b) {
+    return strtotime($b['data_hora']) - strtotime($a['data_hora']);
+});
+
+// Totais do dia (a partir de 00:00)
 $hoje = date('Y-m-d');
-$inicio_dia = $hoje . ' 00:01:00';
+$inicio_dia = $hoje . ' 00:00:00';
 $agora = date('Y-m-d H:i:s');
 $stmt = $db->prepare('SELECT tipo, SUM(quantidade) as total FROM mamadas WHERE data_hora >= ? AND data_hora <= ? GROUP BY tipo');
 $stmt->execute([$inicio_dia, $agora]);
@@ -84,9 +111,9 @@ for ($i = 1; $i < count($datas_24h); $i++) {
 $media_24h = count($intervalos_24h) ? array_sum($intervalos_24h)/count($intervalos_24h) : 0;
 $maior_24h = count($intervalos_24h) ? max($intervalos_24h) : 0;
 $menor_24h = count($intervalos_24h) ? min($intervalos_24h) : 0;
-// Média de tempo entre mamadas (a partir de 00:01 do dia atual)
+// Média de tempo entre mamadas (a partir de 00:00 do dia atual)
 $hoje = date('Y-m-d');
-$inicio_dia = $hoje . ' 00:01:00';
+$inicio_dia = $hoje . ' 00:00:00';
 $agora = date('Y-m-d H:i:s');
 $stmt = $db->prepare('SELECT data_hora FROM mamadas WHERE data_hora >= ? AND data_hora <= ? ORDER BY data_hora ASC');
 $stmt->execute([$inicio_dia, $agora]);
