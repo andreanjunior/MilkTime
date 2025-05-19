@@ -1,7 +1,5 @@
 # MilkTime 🍼
 
-![MilkTime Logo](logo.svg)
-
 ## 📋 Sobre o Projeto
 
 MilkTime é uma aplicação web para monitoramento e registro de alimentação infantil. Desenvolvida com foco em usabilidade e design moderno, a aplicação permite aos pais e cuidadores registrar, acompanhar e analisar os padrões de alimentação do bebê de forma simples e intuitiva.
