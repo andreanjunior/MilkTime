@@ -108,11 +108,6 @@ Contribuições são bem-vindas! Para contribuir:
 ## 📝 Licença
 
 Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
-
-## 📞 Contato
-
-Para dúvidas ou sugestões, entre em contato através de [seu-email@exemplo.com](mailto:seu-email@exemplo.com).
-
 ---
 
 Desenvolvido com ❤️ para facilitar o acompanhamento da alimentação infantil.
